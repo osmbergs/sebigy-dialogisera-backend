@@ -1,0 +1,44 @@
+# Build artifacts (rebuilt in container)
+**/bin/
+**/obj/
+**/out/
+**/publish/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# IDE
+.idea/
+.vs/
+.vscode/
+*.user
+*.suo
+*.sln.iml
+
+# Local settings (secrets!)
+appsettings.Development.json
+appsettings.Local.json
+*.local.json
+secrets.json
+
+# Docker (don't copy into itself)
+**/Dockerfile*
+**/.dockerignore
+
+# Documentation
+*.md
+docs/
+LICENSE
+
+# Test projects and results
+**/*[Tt]ests/
+**/[Tt]est[Rr]esult*/
+*.trx
+coverage*/
+
+# Misc
+.DS_Store
+Thumbs.db
+*.log
