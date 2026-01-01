@@ -6,5 +6,5 @@ namespace Sebigy.Dialogisera.Api.Domain;
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
     public DbSet<Tenant> Tenants => Set<Tenant>();
- //   public DbSet<Customer> Customers => Set<Customer>();
+    public DbSet<User> Customers => Set<User>();
 }

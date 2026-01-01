@@ -1,16 +1,21 @@
 
 
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
+
 using Scalar.AspNetCore;
 using Sebigy.Dialogisera.Api.Domain;
+using Sebigy.Dialogisera.Api.Features.Auth;
 using Sebigy.Dialogisera.Api.Features.Tenants;
+using Sebigy.Dialogisera.Api.Features.Users;
+using Sebigy.Dialogisera.Api.Utils;
+
 //using Sebigy.Dialogisera.Api.Features.Customers;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// Debug: print connection string
-Console.WriteLine($"Environment: {builder.Environment.EnvironmentName}");
-Console.WriteLine($"Connection: {builder.Configuration.GetConnectionString("Default")}");
 
 
 // Services
@@ -18,22 +23,68 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 
 builder.Services.AddScoped<TenantService>();
-//builder.Services.AddScoped<CustomerService>();
+builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<AuthService>();
+builder.Services.AddHttpContextAccessor();
 
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+});
+
+
+
+// Add authentication
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+        };
+    });
+
+builder.Services.AddAuthorization();
+
+
+
+
+
+
+
+
+
 
 var app = builder.Build();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
 
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
-    app.MapScalarApiReference(); 
+    app.MapScalarApiReference(options =>
+    {
+        options
+            .WithPreferredScheme("Bearer");
+    });
 }
 
 app.UseHttpsRedirection();
 
 // Map all feature endpoints
-app.MapTenantEndpoints();
-//app.MapCustomerEndpoints();
+TenantEndpoints.MapTenantEndpoints(app);
+AuthEndpoints.MapAuthEndpoints(app);
+UserEndpoints.MapUserEndpoints(app);
+
+
 
 app.Run();
