@@ -1,6 +1,14 @@
 <Solution>
+
   <Folder Name="/Solution Items/">
     <File Path="compose.yaml" />
   </Folder>
+
+  <Folder Name="/src/" />
+
+  <Folder Name="/tests/" />
+
+  
+  <Project Path="tests/api.tests/Sebigy.Dialogisera.Api.Tests.csproj" />
   <Project Path="src/api/Sebigy.Dialogisera.Api.csproj" />
 </Solution>
