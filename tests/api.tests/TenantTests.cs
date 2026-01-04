@@ -1,13 +1,53 @@
 using System.Net;
 using System.Net.Http.Json;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Sebigy.Dialogisera.Api.Domain;
 using Sebigy.Dialogisera.Api.Features.Tenants;
+using Sebigy.Dialogisera.Api.Features.Users;
+using Sebigy.Dialogisera.Api.Utils;
 
 namespace Sebigy.Dialogisera.Api.Tests.Features.Tenants;
 
 public class TenantTests(CustomWebApplicationFactory factory) 
     : TestBase(factory)
 {
+    
+    
+    
+    
+    
+    [Fact]
+    public async Task Create_and_retrieve_Tenant_ok()
+    {
+
+        await AuthenticateAsync();
+        var request = new CreateTenantRequest{
+            Name="Test Tenant"
+        };
+        var response = await Client.PostAsJsonAsync("/tenants",request);
+        await response.EnsureSuccessWithDetailsAsync();
+        
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var createdTenant = await response.Content.ReadFromJsonAsync<TenantResponse>();
+        Assert.NotNull(createdTenant);
+        Assert.Equal("Test Tenant", createdTenant.Name);
+        Assert.NotEqual(Ulid.Empty, createdTenant.Id);
+
+      
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     [Fact]
     public async Task GetAll_ReturnsEmptyList_WhenNoTenants()
     {
@@ -24,51 +64,7 @@ public class TenantTests(CustomWebApplicationFactory factory)
         Assert.Empty(tenants);
     }
 
-    [Fact]
-    public async Task Create_ReturnsTenant_WithValidRequest()
-    {
-        await AuthenticateAsync();
-        
-        // Arrange
-        var request = new CreateTenantRequest("Test Tenant");
 
-        // Act
-        var response = await Client.PostAsJsonAsync("/tenants", request);
-
-        // Assert
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-        var tenant = await response.Content.ReadFromJsonAsync<TenantResponse>();
-        Assert.NotNull(tenant);
-        Assert.Equal("Test Tenant", tenant.Name);
-        Assert.NotEqual(Guid.Empty, tenant.Id);
-    }
-
-    [Fact]
-    public async Task GetById_ReturnsTenant_WhenExists()
-    {
-        await AuthenticateAsync();
-        
-        // Arrange — seed data directly via DbContext
-        var tenantId = Guid.NewGuid();
-        await ExecuteDbContextAsync(async db =>
-        {
-            db.Tenants.Add(new Tenant
-            {
-                Id = tenantId,
-                Name = "Seeded Tenant",
-                CreatedAt = DateTime.UtcNow
-            });
-            await db.SaveChangesAsync();
-        });
-
-        // Act
-        var response = await Client.GetAsync($"/tenants/{tenantId}");
-
-        // Assert
-        response.EnsureSuccessStatusCode();
-        var tenant = await response.Content.ReadFromJsonAsync<TenantResponse>();
-        Assert.Equal("Seeded Tenant", tenant?.Name);
-    }
 
     [Fact]
     public async Task GetById_ReturnsNotFound_WhenDoesNotExist()

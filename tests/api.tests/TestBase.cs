@@ -5,6 +5,7 @@ using Npgsql;
 using Respawn;
 using Sebigy.Dialogisera.Api.Domain;
 using Sebigy.Dialogisera.Api.Features.Auth;
+using Sebigy.Dialogisera.Api.Utils;
 
 namespace Sebigy.Dialogisera.Api.Tests;
 
@@ -18,11 +19,27 @@ public abstract class TestBase : IClassFixture<CustomWebApplicationFactory>, IAs
     
     
     
+    protected const string DefaultTestEmail = "root@test.com";
+    protected const string DefaultTestPassword = "root";
     
-    // Default test credentials
-    protected const string DefaultTestEmail = "admin@example.com";
-    protected const string DefaultTestPassword = "password";
+    // Seeded entity IDs (available for tests that need to reference them)
+//    protected static readonly Ulid RootTenantId = Ulid.NewUlid();
+  //  protected static readonly Ulid RootUserId = Ulid.NewUlid();
 
+
+    protected  static Tenant RootTenant;
+    protected static User RootUser;
+    protected static Tenant TestTenant1;
+    protected static User TestTenant1AdminUser1;
+    protected static User TestTenant1NormalUser1;
+    
+    protected static Tenant TestTenant2;
+    protected static User TestTenant2AdminUser1;
+    protected static User TestTenant2NormalUser1;
+
+    
+    
+    
     protected TestBase(CustomWebApplicationFactory factory)
     {
         Factory = factory;
@@ -111,7 +128,113 @@ public abstract class TestBase : IClassFixture<CustomWebApplicationFactory>, IAs
         
         await _respawner.ResetAsync(_dbConnection);
         ClearAuthentication();
+        await SeedTestDataAsync();
     }
+    
+    
+    private async Task SeedTestDataAsync()
+    {
+        await ExecuteDbContextAsync(async db =>
+        {
+             RootTenant= new Tenant
+            {
+                Id = Ulid.NewUlid(),
+                Name = "Root Tenant",
+                CreatedAt = DateTime.UtcNow,
+                IsActive = true
+            };
+             
+            TestTenant1= new Tenant
+            {
+                Id = Ulid.NewUlid(),
+                Name = "Test Tenant 1",
+                CreatedAt = DateTime.UtcNow,
+                IsActive = true
+            };
+            TestTenant2= new Tenant
+            {
+                Id = Ulid.NewUlid(),
+                Name = "Test Tenant 2",
+                CreatedAt = DateTime.UtcNow,
+                IsActive = true
+            };
+            
+            
+            RootUser = new User
+            {
+                Id = Ulid.NewUlid(),
+                TenantId = RootTenant.Id,
+                Email = DefaultTestEmail,
+                PasswordHash = CryptHelper.HashPassword(DefaultTestPassword),
+                Name = "Root User",
+                Type = UserType.Root,
+                CreatedAt = DateTime.UtcNow,
+                IsActive = true
+            };
+            
+            
+            TestTenant1AdminUser1 = new User
+            {
+                Id = Ulid.NewUlid(),
+                TenantId = TestTenant1.Id,
+                Email = "test_tenant_1_admin_user@test.com",
+                PasswordHash = CryptHelper.HashPassword("test"),
+                Name = "TestTenant1AdminUser1",
+                Type = UserType.Admin,
+                CreatedAt = DateTime.UtcNow,
+                IsActive = true
+            };
+            
+            TestTenant1NormalUser1 = new User
+            {
+                Id = Ulid.NewUlid(),
+                TenantId = TestTenant1.Id,
+                Email = "test_tenant_1_normal_user@test.com",
+                PasswordHash = CryptHelper.HashPassword("test"),
+                Name = "TestTenant1NormalUser1",
+                Type = UserType.Normal,
+                CreatedAt = DateTime.UtcNow,
+                IsActive = true
+            };
+            
+            TestTenant2AdminUser1 = new User
+            {
+                Id = Ulid.NewUlid(),
+                TenantId = TestTenant2.Id,
+                Email = "test_tenant_2_admin_user@test.com",
+                PasswordHash = CryptHelper.HashPassword("test"),
+                Name = "TestTenant2AdminUser1",
+                Type = UserType.Admin,
+                CreatedAt = DateTime.UtcNow,
+                IsActive = true
+            };
+            TestTenant2NormalUser1 = new User
+            {
+                Id = Ulid.NewUlid(),
+                TenantId = TestTenant2.Id,
+                Email = "test_tenant_2_normal_user@test.com",
+                PasswordHash = CryptHelper.HashPassword("test"),
+                Name = "TestTenant2NormalUser1",
+                Type = UserType.Normal,
+                CreatedAt = DateTime.UtcNow,
+                IsActive = true
+            };
+
+            db.Tenants.Add(RootTenant);
+            db.Tenants.Add(TestTenant1);
+            db.Tenants.Add(TestTenant2);
+            db.Users.Add(RootUser);
+            db.Users.Add(TestTenant1AdminUser1);
+            db.Users.Add(TestTenant1NormalUser1);
+            db.Users.Add(TestTenant2AdminUser1);
+            db.Users.Add(TestTenant2NormalUser1);
+            
+            await db.SaveChangesAsync();
+        });
+    }
+
+    
+    
 
     public async Task DisposeAsync()
     {

@@ -1,44 +1,54 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Sebigy.Dialogisera.Api.Domain;
+using Sebigy.Dialogisera.Api.Utils;
 
 namespace Sebigy.Dialogisera.Api.Features.Auth;
 
-public class AuthService(IConfiguration config)
+public class AuthService(IConfiguration config,AppDbContext db)
 {
     private readonly TimeSpan _accessTokenLifetime = TimeSpan.FromMinutes(15);
     private readonly TimeSpan _refreshTokenLifetime = TimeSpan.FromDays(7);
 
-    public TokenResponse? Authenticate(LoginRequest request)
+    async public Task<TokenResponse?> Authenticate(LoginRequest request)
     {
-        // TODO: Validate credentials against your user store
-        if (request.Email != "admin@example.com" || request.Password != "password")
+        var user = await db.Users
+            .FirstOrDefaultAsync(u => u.Email == request.Email);
+        
+        if (user is null)
             return null;
 
-        return GenerateTokens(request.Email);
+        if (!CryptHelper.IsHashEqual(request.Password, user.PasswordHash))
+            return null;
+        
+        return GenerateTokens(user);
     }
 
-    public TokenResponse? Refresh(RefreshRequest request)
+    public async Task<TokenResponse?> Refresh(RefreshRequest request)
     {
         var principal = ValidateRefreshToken(request.RefreshToken);
         if (principal is null)
             return null;
-
-        var email = principal.FindFirst(ClaimTypes.Email)?.Value;
-        if (email is null)
+        
+        if (!Ulid.TryParse(principal.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var ulidId))
             return null;
+      
+        var user = await db.Users.FirstOrDefaultAsync(u => u.Id == ulidId);
 
-        return GenerateTokens(email);
+
+        return GenerateTokens(user);
     }
 
-    private TokenResponse GenerateTokens(string email)
+    private TokenResponse GenerateTokens(User u)
     {
         var accessTokenExpiry = DateTime.UtcNow.Add(_accessTokenLifetime);
         var refreshTokenExpiry = DateTime.UtcNow.Add(_refreshTokenLifetime);
 
-        var accessToken = GenerateToken(email, accessTokenExpiry, "access");
-        var refreshToken = GenerateToken(email, refreshTokenExpiry, "refresh");
+        var accessToken = GenerateToken(u, accessTokenExpiry, "access");
+        var refreshToken = GenerateToken(u, refreshTokenExpiry, "refresh");
 
         return new TokenResponse(
             accessToken,
@@ -48,7 +58,7 @@ public class AuthService(IConfiguration config)
         );
     }
 
-    private string GenerateToken(string email, DateTime expiresAt, string tokenType)
+    private string GenerateToken(User u, DateTime expiresAt, string tokenType)
     {
         var key = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(config["Jwt:Key"]!));
@@ -57,9 +67,13 @@ public class AuthService(IConfiguration config)
 
         var claims = new[]
         {
-            new Claim(ClaimTypes.Email, email),
-            new Claim(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString()),
-            new Claim("token_type", tokenType)
+       //     new Claim(ClaimTypes.Email, u.Email),
+        //    new Claim(ClaimTypes.NameIdentifier,u.Id.ToString()),
+            new Claim("token_type", tokenType),
+            new Claim("user_type",u.Type.ToString()),
+            new Claim("user_id",u.Id.ToString()), 
+            new Claim("tenant_id",u.TenantId.ToString())
+            
         };
 
         var token = new JwtSecurityToken(
@@ -95,6 +109,9 @@ public class AuthService(IConfiguration config)
             if (tokenTypeClaim != "refresh")
                 return null;
 
+            
+            
+            
             return principal;
         }
         catch

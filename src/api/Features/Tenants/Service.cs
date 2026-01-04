@@ -8,14 +8,14 @@ namespace Sebigy.Dialogisera.Api.Features.Tenants;
 
 public class TenantService(AppDbContext db,ISessionContextAccessor sessionContext)  : ServiceBase(db, sessionContext)
 {
-    public async Task<List<TenantListResponse>> GetAllAsync()
+    public async Task<List<TenantListResponse>> GetTenants()
     {
         return await db.Tenants
             .Select(t => new TenantListResponse(t.Id, t.Name))
             .ToListAsync();
     }
 
-    public async Task<TenantResponse?> GetByIdAsync(Guid id)
+    public async Task<TenantResponse?> GetTenantById(Ulid id)
     {
         return await db.Tenants
             .Where(t => t.Id == id)
@@ -23,11 +23,11 @@ public class TenantService(AppDbContext db,ISessionContextAccessor sessionContex
             .FirstOrDefaultAsync();
     }
 
-    public async Task<TenantResponse> CreateAsync(CreateTenantRequest request)
+    public async Task<TenantResponse> CreateTenant(CreateTenantRequest request)
     {
         var tenant = new Tenant
         {
-            Id = Guid.NewGuid(),
+            Id = Ulid.NewUlid(),
             Name = request.Name,
         
             CreatedAt = DateTime.UtcNow
@@ -39,7 +39,7 @@ public class TenantService(AppDbContext db,ISessionContextAccessor sessionContex
         return new TenantResponse(tenant.Id, tenant.Name,  tenant.CreatedAt, tenant.IsActive);
     }
 
-    public async Task<TenantResponse?> UpdateAsync(Guid id, UpdateTenantRequest request)
+    public async Task<TenantResponse?> UpdateTenant(Ulid id, UpdateTenantRequest request)
     {
         var tenant = await db.Tenants.FindAsync(id);
         if (tenant is null) return null;
@@ -51,7 +51,7 @@ public class TenantService(AppDbContext db,ISessionContextAccessor sessionContex
         return new TenantResponse(tenant.Id, tenant.Name, tenant.CreatedAt, tenant.IsActive);
     }
 
-    public async Task<bool> DeleteAsync(Guid id)
+    public async Task<bool> DeleteTenant(Ulid id)
     {
         var tenant = await db.Tenants.FindAsync(id);
         if (tenant is null) return false;

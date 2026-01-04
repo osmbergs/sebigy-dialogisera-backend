@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
 using Sebigy.Dialogisera.Api.Domain;
 
 namespace Sebigy.Dialogisera.Api.Utils;
@@ -9,17 +10,20 @@ public class SessionContextMiddleware(RequestDelegate next)
     {
         if (context.User.Identity?.IsAuthenticated == true)
         {
-            var userId = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var email = context.User.FindFirst(ClaimTypes.Email)?.Value;
-            var tenantIdClaim = context.User.FindFirst("tenant_id")?.Value;
+            var userId = context.User.FindFirst("user_id")?.Value;
+            var tenantId = context.User.FindFirst("tenant_id")?.Value;
+            var userTypeString = context.User.FindFirst("user_type")?.Value;
 
-            if (userId is not null && email is not null)
+            // Validate all required claims are present and parseable
+            if (Ulid.TryParse(userId, out var parsedUserId) &&
+                Ulid.TryParse(tenantId, out var parsedTenantId) &&
+                Enum.TryParse<UserType>(userTypeString, out var parsedUserType))
             {
                 var session = new SessionContext
                 {
-                    UserId = userId,
-                    Email = email,
-                    TenantId = Guid.TryParse(tenantIdClaim, out var tid) ? tid : null
+                    UserId = parsedUserId,
+                    TenantId = parsedTenantId,
+                    UserType = parsedUserType
                 };
 
                 SessionContextAccessor.Set(context, session);

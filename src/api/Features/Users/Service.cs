@@ -14,7 +14,7 @@ public class UserService(AppDbContext db,ISessionContextAccessor sessionContext)
     public async Task<List<UserListResponse>> GetUsers()
     {
         return await db.Users
-            .Select(u => new UserListResponse(u.Id, u.Email))
+            .Select(u => u.ToListResponse())
             .ToListAsync();
     }
 
@@ -22,14 +22,17 @@ public class UserService(AppDbContext db,ISessionContextAccessor sessionContext)
     {
         return await db.Users
             .Where(u => u.Id == id)
-            .Select(u => new UserResponse(u.Id, u.Email,u.Name, u.CreatedAt, u.IsActive))
+            .Select(u => new UserResponse(
+                u.Id, 
+                u.TenantId,u.Email,u.Name, u.CreatedAt, u.IsActive))
             .FirstOrDefaultAsync();
     }
 
     
     public async Task<UserResponse> CreateUser(CreateUserRequest request)
     {
-        
+        RequireRoot();
+            
         var user = new User
         {
             Id = Ulid.NewUlid(),
@@ -37,13 +40,15 @@ public class UserService(AppDbContext db,ISessionContextAccessor sessionContext)
             Name = request.Name,
             PasswordHash = CryptHelper.HashPassword(request.Password),
             CreatedAt = DateTime.UtcNow,
-            IsActive=true
+            IsActive=true,
+            Type = request.Type,
+            TenantId=request.TenantId
         };
 
         db.Users.Add(user);
         await db.SaveChangesAsync();
 
-        return new UserResponse(user.Id,user.Email, user.Name,  user.CreatedAt, user.IsActive);
+        return user.ToResponse();
     }
 
     
@@ -58,7 +63,7 @@ public class UserService(AppDbContext db,ISessionContextAccessor sessionContext)
         user.IsActive = request.IsActive;
         await db.SaveChangesAsync();
 
-        return new UserResponse(user.Id,user.Email, user.Name, user.CreatedAt, user.IsActive);
+        return user.ToResponse();
     }
 
     public async Task<bool> DeleteUser(Ulid id)

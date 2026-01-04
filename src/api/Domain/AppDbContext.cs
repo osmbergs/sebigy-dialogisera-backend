@@ -16,10 +16,22 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             .HaveConversion<UlidToStringConverter>();
     }
 
+    
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        // Any other entity configurations...
+        
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.HasOne(u => u.Tenant)
+                .WithMany()                          // No collection on Tenant
+                .HasForeignKey(u => u.TenantId)
+                .OnDelete(DeleteBehavior.Restrict);  // Prevent deleting Tenant with Users
+        });
+        
+        modelBuilder.Entity<User>()
+            .Property(u => u.Type)
+            .HasConversion<string>();
     }
 }
 

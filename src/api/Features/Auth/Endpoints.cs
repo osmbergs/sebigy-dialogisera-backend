@@ -6,15 +6,15 @@ public static class AuthEndpoints
     {
         var group = app.MapGroup("/auth").WithTags("Authentication");
 
-        group.MapPost("/login", (LoginRequest request, AuthService service) =>
+        group.MapPost("/login", async (LoginRequest request, AuthService service) =>
         {
-            var result = service.Authenticate(request);
+            var result = await service.Authenticate(request);
             return result is not null
                 ? Results.Ok(result)
                 : Results.Unauthorized();
         });
 
-        group.MapPost("/refresh", (RefreshRequest request, AuthService service) =>
+        group.MapPost("/refresh",(RefreshRequest request, AuthService service) =>
         {
             var result = service.Refresh(request);
             return result is not null

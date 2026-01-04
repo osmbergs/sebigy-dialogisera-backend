@@ -2,7 +2,8 @@ namespace Sebigy.Dialogisera.Api.Domain;
 
 public class SessionContext
 {
-    public required string UserId { get; init; }
-    public required string Email { get; init; }
-    public Guid? TenantId { get; init; }
+    public required Ulid UserId { get; init; }
+    public required Ulid TenantId { get; init; }
+    public required UserType UserType { get; init; }
+    
 }

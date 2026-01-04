@@ -1,6 +1,7 @@
 
 
 using System.Text;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -27,12 +28,18 @@ builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ISessionContextAccessor, SessionContextAccessor>();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
 
 builder.Services.AddOpenApi(options =>
 {
     options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
 });
 
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
 
 
 // Add authentication
@@ -57,7 +64,7 @@ builder.Services.AddAuthorization();
 
 
 var app = builder.Build();
-
+app.UseExceptionHandler();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseMiddleware<SessionContextMiddleware>();
@@ -70,7 +77,7 @@ if (app.Environment.IsDevelopment())
         options
             .WithPreferredScheme("Bearer");
     });
-    app.UseDeveloperExceptionPage(); 
+ //   app.UseDeveloperExceptionPage(); 
 }
 
 app.UseHttpsRedirection();

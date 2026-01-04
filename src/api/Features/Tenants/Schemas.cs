@@ -1,9 +1,18 @@
 namespace Sebigy.Dialogisera.Api.Features.Tenants;
 
 // Request DTOs
-public record CreateTenantRequest(string Name);
-public record UpdateTenantRequest(string Name, bool IsActive);
+public record CreateTenantRequest
+{
+    public required string Name { get; init; }
+}
+
+public record UpdateTenantRequest
+{
+    public string Name { get; init; }
+    public bool IsActive { get; init; }
+    
+}
 
 // Response DTOs
-public record TenantResponse(Guid Id, string Name,  DateTime CreatedAt, bool IsActive);
-public record TenantListResponse(Guid Id, string Name);
+public record TenantResponse(Ulid Id, string Name,  DateTime CreatedAt, bool IsActive);
+public record TenantListResponse(Ulid Id, string Name);
