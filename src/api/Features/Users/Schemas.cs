@@ -1,7 +1,25 @@
 namespace Sebigy.Dialogisera.Api.Features.Users;
 
-public record CreateUserRequest(string Name);
-public record UpdateUserRequest(string Name, bool IsActive);
+public record CreateUserRequest
+{
+    public required string Email { get; init; }
+    public required string Password { get; init; }
+    public string Name { get; init; }
+    
+}
+public record UpdateUserRequest(
+    string Name,
+    bool IsActive
+    );
 
-public record UserResponse(Guid Id, string Name,  DateTime CreatedAt, bool IsActive);
-public record UserListResponse(Guid Id, string Name);
+public record UserResponse(
+    Ulid Id,
+    string Email,
+    string Name,
+    DateTime CreatedAt,
+    bool IsActive
+    );
+
+public record UserListResponse(
+    Ulid Id,
+    string Name);

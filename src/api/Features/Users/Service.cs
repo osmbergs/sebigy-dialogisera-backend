@@ -1,57 +1,67 @@
 // Features/Tenants/TenantService.cs
 
+using System.Security.Cryptography;
+using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Microsoft.EntityFrameworkCore;
 using Sebigy.Dialogisera.Api.Domain;
 using Sebigy.Dialogisera.Api.Features.Users;
+using Sebigy.Dialogisera.Api.Utils;
 
 namespace Sebigy.Dialogisera.Api.Features.Users;
 
-public class UserService(AppDbContext db)
+public class UserService(AppDbContext db,ISessionContextAccessor sessionContext) : ServiceBase(db, sessionContext)
 {
-    public async Task<List<UserListResponse>> GetAllAsync()
+    public async Task<List<UserListResponse>> GetUsers()
     {
-        return await db.Tenants
-            .Select(t => new UserListResponse(t.Id, t.Name))
+        return await db.Users
+            .Select(u => new UserListResponse(u.Id, u.Email))
             .ToListAsync();
     }
 
-    public async Task<UserResponse?> GetByIdAsync(Guid id)
+    public async Task<UserResponse?> GetUserById(Ulid id)
     {
-        return await db.Tenants
-            .Where(t => t.Id == id)
-            .Select(t => new UserResponse(t.Id, t.Name, t.CreatedAt, t.IsActive))
+        return await db.Users
+            .Where(u => u.Id == id)
+            .Select(u => new UserResponse(u.Id, u.Email,u.Name, u.CreatedAt, u.IsActive))
             .FirstOrDefaultAsync();
     }
 
-    public async Task<UserResponse> CreateAsync(CreateUserRequest request)
+    
+    public async Task<UserResponse> CreateUser(CreateUserRequest request)
     {
-        var tenant = new Tenant
-        {
-            Id = Guid.NewGuid(),
-            Name = request.Name,
         
-            CreatedAt = DateTime.UtcNow
+        var user = new User
+        {
+            Id = Ulid.NewUlid(),
+            Email=request.Email,
+            Name = request.Name,
+            PasswordHash = CryptHelper.HashPassword(request.Password),
+            CreatedAt = DateTime.UtcNow,
+            IsActive=true
         };
 
-        db.Tenants.Add(tenant);
+        db.Users.Add(user);
         await db.SaveChangesAsync();
 
-        return new UserResponse(tenant.Id, tenant.Name,  tenant.CreatedAt, tenant.IsActive);
+        return new UserResponse(user.Id,user.Email, user.Name,  user.CreatedAt, user.IsActive);
     }
 
-    public async Task<UserResponse?> UpdateAsync(Guid id, UpdateUserRequest request)
+    
+    
+    
+    public async Task<UserResponse?> UpdateUser(Ulid id, UpdateUserRequest request)
     {
-        var tenant = await db.Tenants.FindAsync(id);
-        if (tenant is null) return null;
+        var user = await db.Users.FindAsync(id);
+        if (user is null) return null;
 
-        tenant.Name = request.Name;
-        tenant.IsActive = request.IsActive;
+        user.Name = request.Name;
+        user.IsActive = request.IsActive;
         await db.SaveChangesAsync();
 
-        return new UserResponse(tenant.Id, tenant.Name, tenant.CreatedAt, tenant.IsActive);
+        return new UserResponse(user.Id,user.Email, user.Name, user.CreatedAt, user.IsActive);
     }
 
-    public async Task<bool> DeleteAsync(Guid id)
+    public async Task<bool> DeleteUser(Ulid id)
     {
         var tenant = await db.Tenants.FindAsync(id);
         if (tenant is null) return false;

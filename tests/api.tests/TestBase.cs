@@ -15,6 +15,10 @@ public abstract class TestBase : IClassFixture<CustomWebApplicationFactory>, IAs
     private Respawner _respawner = null!;
     private NpgsqlConnection _dbConnection = null!;
 
+    
+    
+    
+    
     // Default test credentials
     protected const string DefaultTestEmail = "admin@example.com";
     protected const string DefaultTestPassword = "password";
@@ -35,7 +39,8 @@ public abstract class TestBase : IClassFixture<CustomWebApplicationFactory>, IAs
         var response = await Client.PostAsJsonAsync("/auth/login", 
             new LoginRequest(email, password));
         
-        response.EnsureSuccessStatusCode();
+        await response.EnsureSuccessWithDetailsAsync();
+        
         
         var tokenResponse = await response.Content.ReadFromJsonAsync<TokenResponse>();
         

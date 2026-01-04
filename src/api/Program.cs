@@ -26,6 +26,7 @@ builder.Services.AddScoped<TenantService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ISessionContextAccessor, SessionContextAccessor>();
 
 builder.Services.AddOpenApi(options =>
 {
@@ -55,18 +56,11 @@ builder.Services.AddAuthorization();
 
 
 
-
-
-
-
-
-
-
 var app = builder.Build();
 
 app.UseAuthentication();
 app.UseAuthorization();
-
+app.UseMiddleware<SessionContextMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
@@ -76,6 +70,7 @@ if (app.Environment.IsDevelopment())
         options
             .WithPreferredScheme("Bearer");
     });
+    app.UseDeveloperExceptionPage(); 
 }
 
 app.UseHttpsRedirection();

@@ -7,26 +7,26 @@ public static class UserEndpoints
         var group = app.MapGroup("/users").WithTags("Users").RequireAuthorization();
 
         group.MapGet("/", async (UserService service) =>
-            Results.Ok(await service.GetAllAsync()));
+            Results.Ok(await service.GetUsers()));
 
-        group.MapGet("/{id:guid}", async (Guid id, UserService service) =>
-            await service.GetByIdAsync(id) is { } tenant
+        group.MapGet("/{id}", async (Ulid id, UserService service) =>
+            await service.GetUserById(id) is { } tenant
                 ? Results.Ok(tenant)
                 : Results.NotFound());
 
         group.MapPost("/", async (CreateUserRequest request, UserService service) =>
         {
-            var tenant = await service.CreateAsync(request);
+            var tenant = await service.CreateUser(request);
             return Results.Created($"/tenants/{tenant.Id}", tenant);
         });
 
-        group.MapPut("/{id:guid}", async (Guid id, UpdateUserRequest request, UserService service) =>
-            await service.UpdateAsync(id, request) is { } tenant
+        group.MapPut("/{id}", async (Ulid id, UpdateUserRequest request, UserService service) =>
+            await service.UpdateUser(id, request) is { } tenant
                 ? Results.Ok(tenant)
                 : Results.NotFound());
 
-        group.MapDelete("/{id:guid}", async (Guid id, UserService service) =>
-            await service.DeleteAsync(id)
+        group.MapDelete("/{id}", async (Ulid id, UserService service) =>
+            await service.DeleteUser(id)
                 ? Results.NoContent()
                 : Results.NotFound());
     }

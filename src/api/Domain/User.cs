@@ -2,12 +2,16 @@ namespace Sebigy.Dialogisera.Api.Domain;
 
 public class User
 {
-    public Guid Id { get; set; }
-    public required string Name { get; set; }
+    public Ulid Id { get; set; }
     public required string Email { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public bool IsActive { get; set; } = true;
+    public required string PasswordHash { get; set; }
+
+    public string? Name { get; set; }
+
     
- //   // Navigation properties
-   // public ICollection<Customer> Customers { get; set; } = [];
+    
+    public required DateTime CreatedAt { get; set; }
+
+    public required bool IsActive { get; set; } = true;
+    
 }

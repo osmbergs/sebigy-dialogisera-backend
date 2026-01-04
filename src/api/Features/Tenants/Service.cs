@@ -2,10 +2,11 @@
 
 using Microsoft.EntityFrameworkCore;
 using Sebigy.Dialogisera.Api.Domain;
+using Sebigy.Dialogisera.Api.Utils;
 
 namespace Sebigy.Dialogisera.Api.Features.Tenants;
 
-public class TenantService(AppDbContext db)
+public class TenantService(AppDbContext db,ISessionContextAccessor sessionContext)  : ServiceBase(db, sessionContext)
 {
     public async Task<List<TenantListResponse>> GetAllAsync()
     {
